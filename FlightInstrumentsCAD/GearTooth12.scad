@@ -1,0 +1,26 @@
+
+difference() {
+    union () {
+        // gear base
+        translate([-2, -1, 0])
+            linear_extrude(height = 0.150, center = false, convexity = 25, slices = 5)
+                import(file = "gears24.dxf", scale = 1/25.4, layer="Gear12");
+
+        // gear hub
+        translate([0, 0, 0.057])
+            cylinder(h = 0.3050, d = 0.460, center = false, $fn = 150);
+    }
+
+    // slot for set screw 440 nut
+    translate([0.110, 0, 0.360 - 0.200/2 - 0.040])
+       cube(size = [0.075, 0.200, 0.300], center = true);
+
+    // hole for set screw
+    translate([0, 0, 0.357 - 0.100 - 0.040])
+       rotate ([0, 90, 0])
+          cylinder(h = 2.0, d = 0.125, center = true, $fn = 100);
+
+    // drive bar hole
+    cylinder(h = 2.0, d = 0.093, center = true, $fn = 100);
+}
+
