@@ -1,0 +1,154 @@
+/// File: CockpitPanel.cxx
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include <iostream>
+#include <sys/time.h>
+using namespace std;
+
+#include "CockpitNodeInternal.hxx"
+#include "CockpitIndicators.hxx"
+
+typedef struct CockpitNodeComm {
+  char commPortPath[64];
+  int commPortFd;
+  uint32_t delayTime;
+} CockpitNodeComm_t;
+
+static const int maxIndicatorTable = 64;
+static int nIndicatorTable = 0;
+
+static CockpitNodeComm_t cockpitChannel[maxIndicatorTable];
+
+/// This time elapse implementation slips a little because it is simple, but that is ok for this application.
+static unsigned long GetMillisecondTime(void)
+{
+  struct timeval tv;
+
+  if (gettimeofday(&tv, 0) != 0)
+  {
+    cout << "problem getting time-of-day value" << endl;
+    return 0;
+  }
+  return (unsigned long)((tv.tv_sec * 1000ul) + (tv.tv_usec / 1000ul));
+}
+
+static unsigned long GetMillisecondsElapsed(void)
+{
+  static unsigned long lastMillisecondTime = 0;
+  unsigned long millisecondTime;
+  unsigned elapsedMilliseconds;
+
+  millisecondTime = GetMillisecondTime();
+  if (millisecondTime == 0)
+  {
+    elapsedMilliseconds = 0;
+  }
+  else
+  {
+    elapsedMilliseconds = millisecondTime - lastMillisecondTime;
+    if (elapsedMilliseconds < 10ul)
+      elapsedMilliseconds = 0;
+    else
+      lastMillisecondTime = millisecondTime;
+  }
+  return elapsedMilliseconds;
+}
+
+#if 0
+
+static CockpitNode *indicatorTable[maxIndicatorTable];
+
+static void addIndicatorTable(CockpitNode *node)
+{
+  assert(nIndicatorTable < maxIndicatorTable);
+
+  indicatorTable[nIndicatorTable] = node;
+  nIndicatorTable += 1;
+}
+
+void initCockpitIndicators(void)
+{
+  addIndicatorTable(createCockpitASI());
+  addIndicatorTable(createCockpitATI());
+  addIndicatorTable(createCockpitBrakePressureGauge());
+  addIndicatorTable(createCockpitCarbTemperatureGauge());
+  addIndicatorTable(createCockpitCylTemperatureGauge());
+  addIndicatorTable(createCockpitFlapsGearGauge());
+  addIndicatorTable(createCockpitFuelPressureGauge());
+  addIndicatorTable(createCockpitHydraulicPressureGauge());
+  addIndicatorTable(createCockpitMPI());
+  addIndicatorTable(createCockpitOilPressureGauge());
+  addIndicatorTable(createCockpitOilTemperatureGauge());
+  addIndicatorTable(createCockpitTachometer());
+  addIndicatorTable(createCockpitSuctionGauge());
+  addIndicatorTable(createCockpitVSI());
+}
+#endif
+
+static void processCommChannelTimeout(CockpitNodeComm_t *pCommChannel)
+{
+}
+
+static void processCommChannelTimeEplase(CockpitNodeComm_t *pCommChannel, uint64_t elapsedMilliseconds)
+{
+  if (pCommChannel->delayTime > 0)
+  {
+    if (elapsedTime < pCommChannel->delayTime)
+      pCommChannel->delayTime -= elapsedTime;
+    else
+    {
+      pCommChannel->delayTime = 0;
+      processCommChannelTimeout(pCommChannel);
+    }
+  }
+}
+
+void processCockpitIndicators(void)
+{
+  uint64_t elapsedMilliseconds;
+  int i;
+
+  elapsedMilliseconds = GetMillisecondsElapsed();
+  if (elapsedMilliseconds != 0)
+  {
+    for (i = 0; i < maxIndicatorTable; i++)
+      processCommChannelTimeElapse(&cockpitChannel[i], elapsedMilliseconds);
+  }
+}
+
+void processCockpitCommChannels(void)
+{
+  int i;
+
+  for (i = 0; i < nIndicatorTable; i++)
+    indicatorTable[i]->processNotification();
+}
+
+static void initCockpitCommChannels(void)
+{
+  int i;
+
+  for (i = 0; i < nIndicatorTable; i++)
+  {
+    sprintf(cockpitChannel[i].commPortPath, "/dev/ttyUSB%d", i);
+    cockpitChannel[i].commPortFd = -1;
+    cockpitChannel[i].delayTime = 0;
+  }
+}
+
+void processCockpitNodeWrite(void)
+{
+}
+
+void processCockpitNodeRead(void)
+{
+}
+
+void initCockpitPanel(void)
+{
+  initCockpitCommChannels();
+}
+
